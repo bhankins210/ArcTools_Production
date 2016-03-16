@@ -60,9 +60,9 @@ dissolve_type = arcpy.GetParameterAsText(14)
 
 
 
-if temp_table:
-	arcpy.Delete_management(temp_table)
-	arcpy.AddMessage('Deleting Temp Table')
+# if temp_table:
+	# arcpy.Delete_management(temp_table)
+	# arcpy.AddMessage('Deleting Temp Table')
 	
 table_loc = "in_memory"
 table_name = "temp_table_name"
@@ -161,7 +161,7 @@ if run_buffer_tool == 'yes':
 			arcpy.RefreshTOC()
 			arcpy.RefreshActiveView()
 
-
+		# needs base mapmdx to work correctly to be !!!!
 			#select and print states that intersect the buffer
 			arcpy.SelectLayerByLocation_management("Detailed\Geo Boundaries\States","INTERSECT",buffer_name)
 			arcpy.AddMessage('Create Spatial View for these States:')
