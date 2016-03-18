@@ -29,6 +29,8 @@ all_state = arcpy.GetParameterAsText(8)
 auto_add = arcpy.GetParameterAsText(9)
 
 # convert state_string to comma separated string list
+if str(all_state) == 'true':
+	state_parameter = '()'
 if str(all_state) == 'false':
 	state_parameter = msparkdb.stateconvert(state_string)
 	
@@ -37,33 +39,21 @@ if str(zip) == 'true':
 	zip_table = 'tblz_' + table_name
 	zip_view = 'svwz_' + table_name
 	zip_layer = 'svwz_' + table_name
-	
-	if str(all_state) == 'true':
-		msparkdb.allstateview(zip_table, start_date, end_date, zip_view)
-	else:
-		msparkdb.selectstateview(zip_table, state_parameter, start_date, end_date, zip_view)
+	msparkdb.spatialview(zip_table, start_date, end_date, zip_view, state_parameter)
 
 # Create split spatial view
 if str(split) == 'true':	
 	split_table = 'tbls_' + table_name
 	split_view = 'svws_' + table_name
 	split_layer = 'svws_' + table_name
-	
-	if str(all_state) == 'true':
-		msparkdb.allstateview(split_table, start_date, end_date, split_view)
-	else:
-		msparkdb.selectstateview(split_table, state_parameter, start_date, end_date, split_view)	
+	msparkdb.spatialview(split_table, start_date, end_date, split_view, state_parameter)	
 
 # Create route spatial view
 if str(route) == 'true':	
 	route_table = 'tblr_' + table_name
 	route_view = 'svwr_' + table_name
 	route_layer = 'svwr_' + table_name
-	
-	if str(all_state) == 'true':
-		msparkdb.allstateview(route_table, start_date, end_date, route_view)
-	else:
-		msparkdb.selectstateview(route_table, state_parameter, start_date, end_date, route_view)	
+	msparkdb.spatialview(route_table, start_date, end_date, route_view, state_parameter)	
 		
 # clean views
 if str(clean_view) == 'true':

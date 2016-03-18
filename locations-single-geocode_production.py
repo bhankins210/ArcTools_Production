@@ -161,15 +161,15 @@ if run_buffer_tool == 'yes':
 			arcpy.RefreshTOC()
 			arcpy.RefreshActiveView()
 
-		# needs base mapmdx to work correctly to be !!!!
+		# needs base map mdx to work correctly to be !!!!
 			#select and print states that intersect the buffer
-			arcpy.SelectLayerByLocation_management("Detailed\Geo Boundaries\States","INTERSECT",buffer_name)
-			arcpy.AddMessage('Create Spatial View for these States:')
-			for row in arcpy.SearchCursor("Detailed\Geo Boundaries\States"):
-				states = row.NAME
-				arcpy.AddMessage(states)
-			time2 = time.clock()  
-			arcpy.AddMessage("Processing Time: " + str(time2-time1) + " seconds")
+			# arcpy.SelectLayerByLocation_management("Detailed\Geo Boundaries\States","INTERSECT",buffer_name)
+			# arcpy.AddMessage('Create Spatial View for these States:')
+			# for row in arcpy.SearchCursor("Detailed\Geo Boundaries\States"):
+				# states = row.NAME
+				# arcpy.AddMessage(states)
+			# time2 = time.clock()  
+			# arcpy.AddMessage("Processing Time: " + str(time2-time1) + " seconds")
 				
 		#error if any zip level match
 		else:
@@ -191,13 +191,13 @@ if run_buffer_tool == 'yes':
 
 
 		#select and print states that intersect the buffer
-		arcpy.SelectLayerByLocation_management("Detailed\Geo Boundaries\States","INTERSECT",buffer_name)
-		arcpy.AddMessage('Create Spatial View for these States:')
-		for row in arcpy.SearchCursor("Detailed\Geo Boundaries\States"):
-			states = row.NAME
-			arcpy.AddMessage(states)
-		time2 = time.clock()  
-		arcpy.AddMessage("Processing Time: " + str(time2-time1) + " seconds")
+		# arcpy.SelectLayerByLocation_management("Detailed\Geo Boundaries\States","INTERSECT",buffer_name)
+		# arcpy.AddMessage('Create Spatial View for these States:')
+		# for row in arcpy.SearchCursor("Detailed\Geo Boundaries\States"):
+			# states = row.NAME
+			# arcpy.AddMessage(states)
+		# time2 = time.clock()  
+		# arcpy.AddMessage("Processing Time: " + str(time2-time1) + " seconds")
 
 if run_buffer_tool == 'no':
 	arcpy.AddMessage('Checking for Zip Level Match')
