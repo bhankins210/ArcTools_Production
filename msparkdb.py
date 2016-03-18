@@ -114,4 +114,98 @@ def resetview(view_name_in):
 	except:
 		print 'could not reset view'
 		
+
+# sync map to grid
+# reset selected field to 0
+def syncmapupdate(view_name_in):
+	try:
+		view_space = view_name_in.find('svw')
+		view_name = view_name_in[view_space:]
+		con = dbconn()
+		cur = con.cursor()
+		sql_command = """EXEC [dbo].[gis_sync_map_update] '%s'""" % view_name
+		cur.execute(sql_command)
+		con.commit()
+		con.close()
+	except:
+		print 'error'
+
+	
+# set selected = 1 for selected features in arcmap	
+def syncmapset(view_name_in,geo_in):
+	try:
+		view_space = view_name_in.find('svw')
+		view_name = view_name_in[view_space:]
+		geo = str(geo_in)
+		con = dbconn()
+		cur = con.cursor()
+		sql_command = """EXEC [dbo].[gis_sync_map_set] '%s','%s'""" % (view_name, geo)
+		cur.execute(sql_command)
+		con.commit()
+		con.close()
+	except:
+		print 'error'
+	
+	
+# # delete rows where selected = 0
+def syncmapdelete(view_name_in):
+	try:
+		view_space = view_name_in.find('svw')
+		view_name = view_name_in[view_space:]
+		con = dbconn()
+		cur = con.cursor()
+		sql_command = """EXEC [dbo].[gis_sync_map_delete] '%s'""" % view_name
+		cur.execute(sql_command)
+		con.commit()
+		con.close()
+	except:
+		print 'error'
+
+		
+# Loop through selected features and set "selected" field to 1 
+def syncmaprun(view_name_in):
+	try:
+		# determine level of geography
+		view_space = view_name_in.find('svw')
+		view_name = view_name_in[view_space:]
+		if view_name[0:4].upper() == 'SVWZ':
+			featureclass = view_name_in
+			rows = arcpy.SearchCursor(featureclass)
+			row = rows.next()
+			while row:
+				zip = row.zip
+				syncmapset(view_name_in,zip)
+				row = rows.next()
+		if view_name[0:4].upper() == 'SVWS':
+			featureclass = view_name_in
+			rows = arcpy.SearchCursor(featureclass)
+			row = rows.next()
+			while row:
+				zip_split = row.zip_split
+				syncmapset(view_name_in,zip_split)
+				row = rows.next()
+		if view_name[0:4].upper() == 'SVWR':
+			featureclass = view_name_in
+			rows = arcpy.SearchCursor(featureclass)
+			row = rows.next()
+			while row:
+				CR_ID = row.CR_ID
+				syncmapset(view_name_in,CR_ID)
+				row = rows.next()
+	except:
+		print 'error'
+
+		
+# clear selected features and refresh map view		
+def clearlayer(view_clear):
+	try:
+		arcpy.RefreshTOC()
+		arcpy.RefreshActiveView()
+		layers = arcpy.mapping.ListLayers(mxd,view_clear,df)
+		for layer in layers:
+			arcpy.SelectLayerByAttribute_management(layer,"CLEAR_SELECTION")		
+	except:
+		print 'error'
+		
+		
 		
