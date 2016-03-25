@@ -12,15 +12,13 @@ mxd = arcpy.mapping.MapDocument(r"CURRENT")
 df = arcpy.mapping.ListDataFrames(mxd,'*')[0]	
 db_connection = 'Database Connections\spatial_view.sde'
 
-
-# Creates databse connection via pypyodbc
+# # Creates databse connection via pypyodbc
 def dbconn():
 	try:
-		connection = pypyodbc.connect('DRIVER={SQL Server};SERVER=mapping-sqldev\esri;DATABASE=spatial_view;UID=id;PWD=pass;Trusted_Connection=Yes')
+		connection = pypyodbc.connect('DRIVER={SQL Server Native Client 11.0};SERVER=mapping-sqldev\esri;DATABASE=spatial_view;UID=id;PWD=pass;Trusted_Connection=Yes')
 		return connection
 	except:
 		print 'Cannot connect to database'
-		
 		
 # Runs clean view stored procedure
 def cleanview(table_name):
@@ -71,6 +69,7 @@ def spatialview(*in_var):
 		con = dbconn()
 		cur = con.cursor()
 		sql_command = """EXEC [dbo].[gis_spatialview_combined] '%s','%s','%s','%s','%s'""" % (sql_param_tup)
+		arcpy.AddMessage(sql_command)
 		cur.execute(sql_command)
 		con.commit()
 		con.close()
@@ -207,5 +206,52 @@ def clearlayer(view_clear):
 	except:
 		print 'error'
 		
-		
-		
+# profile location unduplicated
+def profileloc(loc_table_in,view_name_in,max_radius):
+	try:
+		view_space = view_name_in.find('svw')
+		view_name = view_name_in[view_space:]
+		table_name = 'tbl' + view_name[3:]
+		con = dbconn()
+		cur = con.cursor()
+		rows = arcpy.SearchCursor(loc_table_in)
+		row = rows.next()
+		dupes = 'no'
+		while row:
+			store = row.store
+			lat = row.latitude
+			lon = row.longitude
+			sql_command = """EXEC [dbo].[gis_SearchRadius_brian] '%s','%s','%s','%s','%s','%s'""" %(table_name, str(lat), str(lon), str(max_radius), str(store), dupes)
+			cur.execute(sql_command)
+			con.commit()
+			row = rows.next()
+		con.close()
+		arcpy.AddMessage('Single Profile Complete')
+	except:
+		print 'profile failed'
+		arcpy.AddMessage('Profile FAIL')
+
+# profile locations with duplication		
+def duplprofileloc(loc_table_in,view_name_in,max_radius):
+	try:
+		view_space = view_name_in.find('svw')
+		view_name = view_name_in[view_space:]
+		table_name = 'tbl' + view_name[3:]
+		con = dbconn()
+		cur = con.cursor()
+		rows = arcpy.SearchCursor(loc_table_in)
+		row = rows.next()
+		dupes = 'no'
+		while row:
+			store = row.store
+			lat = row.latitude
+			lon = row.longitude
+			sql_command = """EXEC [dbo].[gis_RadiusDupes_brian] '%s','%s','%s','%s','%s','%s'""" %(table_name, str(lat), str(lon), str(max_radius), str(store), dupes)
+			cur.execute(sql_command)
+			con.commit()
+			row = rows.next()
+		con.close()
+		arcpy.AddMessage('Duplicated Profile Complete')
+	except:
+		print 'FAIL'
+		arcpy.AddMessage('Duplicated Profile FAIL')
