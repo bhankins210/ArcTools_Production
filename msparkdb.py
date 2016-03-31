@@ -11,6 +11,7 @@ import pypyodbc
 mxd = arcpy.mapping.MapDocument(r"CURRENT")
 df = arcpy.mapping.ListDataFrames(mxd,'*')[0]	
 db_connection = 'Database Connections\spatial_view.sde'
+sr = r"C:\Program Files (x86)\ArcGIS\Desktop10.3\Reference Systems\WGS 1984 Web Mercator (auxiliary sphere).prj"
 
 # # Creates databse connection via pypyodbc
 def dbconn():
@@ -19,7 +20,9 @@ def dbconn():
 		return connection
 	except:
 		print 'Cannot connect to database'
-		
+
+
+# ***********************************spatial view functions*************************************		
 # Runs clean view stored procedure
 def cleanview(table_name):
 	try:
@@ -114,7 +117,7 @@ def resetview(view_name_in):
 		print 'could not reset view'
 		
 
-# sync map to grid
+# ********************************************************sync map to grid functions****************************************************
 # reset selected field to 0
 def syncmapupdate(view_name_in):
 	try:
@@ -205,7 +208,28 @@ def clearlayer(view_clear):
 			arcpy.SelectLayerByAttribute_management(layer,"CLEAR_SELECTION")		
 	except:
 		print 'error'
+
+# **************************delete spatial view features using query**************************
+def viewquery(view_name_in,sql_in):
+	try:
+		view_space = view_name_in.find('svw')
+		table_name = 'tbl' + view_name[3:]
+		con = dbconn()
+		cur = con.cursor()
+		sql_command = 'DELETE FROM ' + table_name + ' WHERE ' + sql_in
+		arcpy.AddMessage(sql_command)
+		cur.execute(sql_command)
+		con.commit()
+		con.close()
+	except:
+		print 'error'
 		
+		
+		
+		
+		
+		
+# ***********************************************Profile Functions**********************************
 # profile location unduplicated
 def profileloc(loc_table_in,view_name_in,max_radius):
 	try:
@@ -255,3 +279,32 @@ def duplprofileloc(loc_table_in,view_name_in,max_radius):
 	except:
 		print 'FAIL'
 		arcpy.AddMessage('Duplicated Profile FAIL')
+		
+		
+		
+# *********************************************location functions****************************************************
+
+# create new mdb
+def newmdb(new_mdb_loc,new_mdb_name):
+	try:
+		arcpy.CreatePersonalGDB_management(new_mdb_loc,new_mdb_name)
+		arcpy.AddMessage('Database Crested')
+		space = new_mdb_loc + '/' + new_mdb_name
+		return space;
+	except:
+		arcpy.AddMessage('fail')
+		
+# create location layer from geocoded table
+def loctable(loc_in,space,loc_table,xy_event):
+	try:
+		arcpy.TableToTable_conversion(loc_in,space,loc_table)
+		arcpy.MakeXYEventLayer_management(loc_in,"LONGITUDE","LATITUDE",xy_event,sr)
+		arcpy.CopyFeatures_management(xy_event,loc_out)
+		arcpy.Delete_management(xy_event)
+		arcpy.Delete_management(loc_table)
+		loc_layer = arcpy.mapping.Layer(loc_out)
+		arcpy.mapping.AddLayer(df,loc_layer)
+		arcpy.RefreshTOC()
+		arcpy.RefreshActiveView()
+	except:
+		arcpy.AddMessage('error')
