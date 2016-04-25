@@ -29,6 +29,4 @@ else:
 
 # create location table
 arcpy.env.workspace = space
-msparkdb.loctable(loc_in,space,loc_table,xy_event)
-		
-
+msparkdb.loctable(loc_in,space,loc_table,xy_event,loc_out)

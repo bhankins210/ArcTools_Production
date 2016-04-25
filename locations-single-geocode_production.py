@@ -1,6 +1,5 @@
 import arcpy
-from arcpy import env
-from arcpy import mapping 
+import msparkdb
 
 
 #Define variable through ArcMap script
@@ -8,7 +7,7 @@ arcpy.AddMessage('Defining Variables')
 time1 = time.clock()
 request_in = arcpy.GetParameterAsText(0)
 request_id = request_in.upper() 
-loc_out = request_id + '_LOC'
+loc_name = request_id + '_LOC'
 address_in = arcpy.GetParameterAsText(1)
 city_in = arcpy.GetParameterAsText(2)
 state_in = arcpy.GetParameterAsText(3)
@@ -24,23 +23,19 @@ new_mdb_name = arcpy.GetParameterAsText(8)
 # use existing database
 mdb_loc = arcpy.GetParameterAsText(9)
 
+
+# define database		
 if str(new_db) == 'true':
-	arcpy.CreatePersonalGDB_management(new_mdb_loc,new_mdb_name)
-	print 'Database Crested'
-	#arcpy.env.workspace = mdb_name
-	space = new_mdb_loc + '/' + new_mdb_name
-	arcpy.env.workspace = space
+	space = msparkdb.newmdb(new_mdb_loc,new_mdb_name)
 else: 
 	space = mdb_loc
-	arcpy.env.workspace = space
-	arcpy.AddMessage('Use existing database')
-
+	
 # turn on buffering - default true
 buffer_yes = arcpy.GetParameterAsText(10)
-if str(buffer_yes) == 'true':
-	run_buffer_tool = 'yes'
-else:
-	run_buffer_tool = 'no'
+# if str(buffer_yes) == 'true':
+	# run_buffer_tool = 'yes'
+# else:
+	# run_buffer_tool = 'no'
 	
 # override error out on zip centroid
 centroid_error = arcpy.GetParameterAsText(11) 	
@@ -59,74 +54,27 @@ else:
 dissolve_type = arcpy.GetParameterAsText(14)
 
 
-
-# if temp_table:
-	# arcpy.Delete_management(temp_table)
-	# arcpy.AddMessage('Deleting Temp Table')
-	
-table_loc = "in_memory"
-table_name = "temp_table_name"
-temp_table = arcpy.CreateTable_management(table_loc, table_name)
-arcpy.AddField_management(temp_table, "Address", "TEXT", field_length=1100)
-arcpy.AddField_management(temp_table, "city", "TEXT", field_length=30)
-arcpy.AddField_management(temp_table, "state", "TEXT", field_length=2)
-arcpy.AddField_management(temp_table, "zip", "TEXT", field_length=5)
-arcpy.AddField_management(temp_table, "store", "TEXT", field_length=30)
-arcpy.AddField_management(temp_table, "LATITUDE", "FLOAT", field_length=20)
-arcpy.AddField_management(temp_table, "LONGITUDE", "FLOAT", field_length=20)
-arcpy.AddField_management(temp_table, "FAILURECODE", "FLOAT", field_length=20)
-arcpy.AddField_management(temp_table, "RADIUS", "FLOAT", field_length=20)
-arcpy.AddField_management(temp_table, "REQUESTID", "FLOAT", field_length=20)
-
-
-cursor = arcpy.da.InsertCursor(temp_table, ["Address", "city", "state", "zip", "store"])
+# build temp location table for geocoding
+temp_loc_table = msparkdb.temploctable(request_id)
+cursor = arcpy.da.InsertCursor(temp_loc_table, ["Address", "city", "state", "zip", "store"])
 cursor.insertRow([address_in, city_in, state_in, zip_in, store_in])
 
 #Geocode location
-arcpy.AddMessage('Geocoding Location')
-time1 = time.clock()
-address_locator = r'C:\ArcGIS\Business Analyst\US_2015\Data\Geocoding Data\USA_LocalComposite.loc'
-address_fields = "Address Address;City City;State State;ZIP Zip"
-geocode_result = loc_out
-arcpy.GeocodeAddresses_geocoding(temp_table, address_locator, address_fields, geocode_result, 'STATIC')
-arcpy.Delete_management(temp_table)
-time2 = time.clock()  
-arcpy.AddMessage("Processing Time: " + str(time2-time1) + " seconds")
+loc_out = msparkdb.geocode(loc_name,temp_loc_table)
+arcpy.Delete_management(temp_loc_table)
 
 #Add location to map document
-arcpy.AddMessage('Adding Location Layer to TOC')
-time1 = time.clock()
-mxd = arcpy.mapping.MapDocument(r"CURRENT")
-df = arcpy.mapping.ListDataFrames(mxd,'*')[0]
-
-layer = arcpy.mapping.Layer(loc_out)
-arcpy.mapping.AddLayer(df,layer)
-time2 = time.clock()  
-arcpy.AddMessage("Processing Time: " + str(time2-time1) + " seconds")
-
+msparkdb.loadlayer(loc_out)
 
 #Delete extra fields from location table
-arcpy.AddMessage('Cleaning Location File')
-time1 = time.clock()
-layers = arcpy.mapping.ListLayers(mxd)
-for layer in layers:
-	if layer.name == loc_out:	
-		temp_loc = loc_out
-
-arcpy.CalculateField_management(temp_loc,"LATITUDE",'[Y]',"VB","#")
-arcpy.CalculateField_management(temp_loc,"LONGITUDE",'[X]',"VB","#")
-arcpy.CalculateField_management(temp_loc,"FAILURECODE","[Loc_name]","VB","#")
-
+msparkdb.cleanloctable(loc_out)
 # drop_fields = ['loc_out','Status','Score','Match_type','Side','X','Y','Match_addr','Block','BlockL','BlockR','ARC_Addres','ARC_City','ARC_State','ARC_Zip','Address']
 # arcpy.DeleteField_management(temp_loc,'loc_out;Status;Score;Match_type;Side;X;Y;Match_addr;Block;BlockL;BlockR;ARC_Addres;ARC_City;ARC_State;ARC_Zip')
 # arcpy.DeleteField_management(loc_out,drop_fields)
 
-time2 = time.clock()  
-arcpy.AddMessage("Processing Time: " + str(time2-time1) + " seconds")
 
 
-if run_buffer_tool == 'yes':
-
+if str(buffer_yes) == 'true':
 	if ignore_centroid_error == 'no':
 		arcpy.AddMessage('Checking for Zip Level Match')
 		time1 = time.clock()
