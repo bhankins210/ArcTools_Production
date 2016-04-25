@@ -7,3 +7,5 @@ sv_query = arcpy.GetParameterAsText(1)
 
 # delete view features based on view
 msparkdb.viewquery(view_name_in,sv_query)
+
+arcpy.RefreshActiveView()

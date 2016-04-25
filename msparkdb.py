@@ -11,16 +11,26 @@ import pypyodbc
 mxd = arcpy.mapping.MapDocument(r"CURRENT")
 df = arcpy.mapping.ListDataFrames(mxd,'*')[0]	
 db_connection = 'Database Connections\spatial_view.sde'
-sr = r"C:\Program Files (x86)\ArcGIS\Desktop10.3\Reference Systems\WGS 1984 Web Mercator (auxiliary sphere).prj"
+# sr = r"C:\Program Files (x86)\ArcGIS\Desktop10.3\Reference Systems\WGS 1984 Web Mercator (auxiliary sphere).prj"
+sr = r'C:\Program Files (x86)\ArcGIS\Desktop10.0\Coordinate Systems\Geographic Coordinate Systems\World\WGS 1984.prj'
 
 # # Creates databse connection via pypyodbc
 def dbconn():
 	try:
-		connection = pypyodbc.connect('DRIVER={SQL Server Native Client 11.0};SERVER=mapping-sqldev\esri;DATABASE=spatial_view;UID=id;PWD=pass;Trusted_Connection=Yes')
+		connection = pypyodbc.connect('DRIVER={SQL Server Native Client 11.0};SERVER=mapping-sqldev\ARC;DATABASE=spatial_view;UID=sde;PWD=SDE123**')
 		return connection
 	except:
 		print 'Cannot connect to database'
+		arcpy.AddMessage('Cannot Connect to DB')
 
+# # Creates databse connection via pypyodbc
+def dbconn2():
+	try:
+		connection = pypyodbc.connect('DRIVER={SQL Server Native Client 11.0};SERVER=mapping-sqldev\esri;DATABASE=spatial_view;UID=id;PWD=pass;Trusted_Connection=Yes')
+		# connection.autocommit = True
+		return connection
+	except:
+		print 'Cannot connect to database'
 
 # ***********************************spatial view functions*************************************		
 # Runs clean view stored procedure
@@ -29,7 +39,7 @@ def cleanview(table_name):
 		con = dbconn()
 		cur = con.cursor()
 		table_clean = "'" + table_name + "'"
-		sql_command = """EXEC [dbo].[gis_clean_view] %s""" % table_clean
+		sql_command = """EXEC [gis].[clean_view] %s""" % table_clean
 		cur.execute(sql_command)
 		con.commit()
 		con.close()
@@ -71,7 +81,7 @@ def spatialview(*in_var):
 		sql_param_tup = in_var
 		con = dbconn()
 		cur = con.cursor()
-		sql_command = """EXEC [dbo].[gis_spatialview_combined] '%s','%s','%s','%s','%s'""" % (sql_param_tup)
+		sql_command = """EXEC [gis].[spatialview_combined] '%s','%s','%s','%s','%s'""" % (sql_param_tup)
 		arcpy.AddMessage(sql_command)
 		cur.execute(sql_command)
 		con.commit()
@@ -87,7 +97,7 @@ def deleteview(view_name_in):
 		view_name = view_name_in[view_space:]
 		con = dbconn()
 		cur = con.cursor()
-		sql_command = """EXEC [dbo].[gis_delete_spatialview] '%s'""" % view_name
+		sql_command = """EXEC [gis].[delete_spatialview] '%s'""" % view_name
 		cur.execute(sql_command)
 		con.commit()
 		con.close()
@@ -109,7 +119,7 @@ def resetview(view_name_in):
 		view_name = view_name_in[view_space:]
 		con = dbconn()
 		cur = con.cursor()
-		sql_command = """EXEC [dbo].[gis_reset_view] '%s'""" % view_name
+		sql_command = """EXEC [gis].[reset_view] '%s'""" % view_name
 		cur.execute(sql_command)
 		con.commit()
 		con.close()
@@ -125,7 +135,7 @@ def syncmapupdate(view_name_in):
 		view_name = view_name_in[view_space:]
 		con = dbconn()
 		cur = con.cursor()
-		sql_command = """EXEC [dbo].[gis_sync_map_update] '%s'""" % view_name
+		sql_command = """EXEC [gis].[sync_map_update] '%s'""" % view_name
 		cur.execute(sql_command)
 		con.commit()
 		con.close()
@@ -141,7 +151,7 @@ def syncmapset(view_name_in,geo_in):
 		geo = str(geo_in)
 		con = dbconn()
 		cur = con.cursor()
-		sql_command = """EXEC [dbo].[gis_sync_map_set] '%s','%s'""" % (view_name, geo)
+		sql_command = """EXEC [gis].[sync_map_set] '%s','%s'""" % (view_name, geo)
 		cur.execute(sql_command)
 		con.commit()
 		con.close()
@@ -156,7 +166,7 @@ def syncmapdelete(view_name_in):
 		view_name = view_name_in[view_space:]
 		con = dbconn()
 		cur = con.cursor()
-		sql_command = """EXEC [dbo].[gis_sync_map_delete] '%s'""" % view_name
+		sql_command = """EXEC [gis].[sync_map_delete] '%s'""" % view_name
 		cur.execute(sql_command)
 		con.commit()
 		con.close()
@@ -213,10 +223,11 @@ def clearlayer(view_clear):
 def viewquery(view_name_in,sql_in):
 	try:
 		view_space = view_name_in.find('svw')
+		view_name = view_name_in[view_space:]
 		table_name = 'tbl' + view_name[3:]
 		con = dbconn()
 		cur = con.cursor()
-		sql_command = 'DELETE FROM ' + table_name + ' WHERE ' + sql_in
+		sql_command = 'DELETE FROM sde.' + table_name + ' WHERE ' + sql_in
 		arcpy.AddMessage(sql_command)
 		cur.execute(sql_command)
 		con.commit()
@@ -245,11 +256,12 @@ def profileloc(loc_table_in,view_name_in,max_radius):
 			store = row.store
 			lat = row.latitude
 			lon = row.longitude
-			sql_command = """EXEC [dbo].[gis_SearchRadius_brian] '%s','%s','%s','%s','%s','%s'""" %(table_name, str(lat), str(lon), str(max_radius), str(store), dupes)
+			sql_command = """EXEC [gis].[SearchRadius_brian] '%s','%s','%s','%s','%s','%s'""" %(table_name, str(lat), str(lon), str(max_radius), str(store), dupes)
 			cur.execute(sql_command)
 			con.commit()
 			row = rows.next()
 		con.close()
+		del con
 		arcpy.AddMessage('Single Profile Complete')
 	except:
 		print 'profile failed'
@@ -270,11 +282,16 @@ def duplprofileloc(loc_table_in,view_name_in,max_radius):
 			store = row.store
 			lat = row.latitude
 			lon = row.longitude
-			sql_command = """EXEC [dbo].[gis_RadiusDupes_brian] '%s','%s','%s','%s','%s','%s'""" %(table_name, str(lat), str(lon), str(max_radius), str(store), dupes)
-			cur.execute(sql_command)
+			sql_command2 = """EXEC [gis].[RadiusDupes_brian] '%s','%s','%s','%s','%s','%s'""" %(table_name, str(lat), str(lon), str(max_radius), str(store), dupes)
+			arcpy.AddMessage(sql_command2)
+			cur.execute(sql_command2)
+			arcpy.AddMessage('executed')
 			con.commit()
+			arcpy.AddMessage('commited')
 			row = rows.next()
+			# arcpy.AddMessage(row)
 		con.close()
+		del con
 		arcpy.AddMessage('Duplicated Profile Complete')
 	except:
 		print 'FAIL'
@@ -288,14 +305,14 @@ def duplprofileloc(loc_table_in,view_name_in,max_radius):
 def newmdb(new_mdb_loc,new_mdb_name):
 	try:
 		arcpy.CreatePersonalGDB_management(new_mdb_loc,new_mdb_name)
-		arcpy.AddMessage('Database Crested')
+		arcpy.AddMessage('Database Created')
 		space = new_mdb_loc + '/' + new_mdb_name
 		return space;
 	except:
 		arcpy.AddMessage('fail')
 		
 # create location layer from geocoded table
-def loctable(loc_in,space,loc_table,xy_event):
+def loctable(loc_in,space,loc_table,xy_event,loc_out):
 	try:
 		arcpy.TableToTable_conversion(loc_in,space,loc_table)
 		arcpy.MakeXYEventLayer_management(loc_in,"LONGITUDE","LATITUDE",xy_event,sr)
@@ -308,3 +325,60 @@ def loctable(loc_in,space,loc_table,xy_event):
 		arcpy.RefreshActiveView()
 	except:
 		arcpy.AddMessage('error')
+
+# temp location table for single location geocoding		
+def temploctable(request_id):
+	try:
+		table_loc = "in_memory"
+		table_name = request_id + "_temp_table"
+		temp_table = arcpy.CreateTable_management(table_loc, table_name)
+		arcpy.AddField_management(temp_table, "Address", "TEXT", field_length=1100)
+		arcpy.AddField_management(temp_table, "city", "TEXT", field_length=30)
+		arcpy.AddField_management(temp_table, "state", "TEXT", field_length=2)
+		arcpy.AddField_management(temp_table, "zip", "TEXT", field_length=5)
+		arcpy.AddField_management(temp_table, "store", "TEXT", field_length=30)
+		arcpy.AddField_management(temp_table, "LATITUDE", "FLOAT", field_length=20)
+		arcpy.AddField_management(temp_table, "LONGITUDE", "FLOAT", field_length=20)
+		arcpy.AddField_management(temp_table, "FAILURECODE", "TEXT", field_length=20)
+		arcpy.AddField_management(temp_table, "RADIUS", "FLOAT", field_length=20)
+		arcpy.AddField_management(temp_table, "REQUESTID", "FLOAT", field_length=20)
+		arcpy.CalculateField_management(temp_table,"FAILURECODE","fc","VB","#")
+		return temp_loc_table;
+	except:
+		arcpy.AddMessage('temp table failure')
+
+		
+# geocode single location		
+def geocode(loc_name,temp_loc_table):
+	try:
+		address_locator = r'C:\ArcGIS\Business Analyst\US_2015\Data\Geocoding Data\USA_LocalComposite.loc'
+		address_fields = "Address Address;City City;State State;ZIP Zip"
+		geocode_result = loc_name
+		arcpy.GeocodeAddresses_geocoding(temp_loc_table, address_locator, address_fields, geocode_result, 'STATIC')
+		return loc_name;
+	except:
+		arcpy.AddMessage('geocodeing failed')
+
+# add geocoded loaction to TOC
+def loadlayer(loc_out):
+	try:
+		layer = arcpy.mapping.Layer(loc_out)
+		arcpy.mapping.AddLayer(df,layer)
+		arcpy.RefreshTOC()
+		arcpy.RefreshActiveView()
+	except:
+		arcpy.AddMessage('layer failed to load')
+
+# clean location table		
+def cleanloctable(loc_out):
+	try:
+		layers = arcpy.mapping.ListLayers(mxd)
+		for layer in layers:
+			if layer.name == loc_out:	
+				temp_loc = loc_out
+
+		arcpy.CalculateField_management(temp_loc,"LATITUDE",'[Y]',"VB","#")
+		arcpy.CalculateField_management(temp_loc,"LONGITUDE",'[X]',"VB","#")
+		arcpy.CalculateField_management(temp_loc,"FAILURECODE","[Loc_name]","VB","#")
+	except:
+		arcpy.AddMessage('Could not clean loc table')

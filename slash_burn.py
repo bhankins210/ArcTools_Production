@@ -1,13 +1,11 @@
 import arcpy 
-from arcpy import env 
-import os 
 import msparkdb
 
 # Establish connection for workspace 
 
 delete_all = arcpy.GetParameterAsText(0)
 
-env.workspace = 'Database Connections\\spatial_view.sde\\'	
+arcpy.env.workspace = r'Database Connections\arc_spatial_view.sde'	
 
 #call ListFeatureClass function
 if delete_all == 'true':
