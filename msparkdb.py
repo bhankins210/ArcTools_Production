@@ -311,7 +311,7 @@ def newmdb(new_mdb_loc,new_mdb_name):
 	except:
 		arcpy.AddMessage('fail')
 		
-# create location layer from geocoded table
+# create location layer from pre-geocoded address list
 def loctable(loc_in,space,loc_table,xy_event,loc_out):
 	try:
 		arcpy.TableToTable_conversion(loc_in,space,loc_table)
@@ -326,8 +326,10 @@ def loctable(loc_in,space,loc_table,xy_event,loc_out):
 	except:
 		arcpy.AddMessage('error')
 
+		
+# ***************SINGLE LOCATION GEOCODE FUNCTIONS********************		
 # temp location table for single location geocoding		
-def temploctable(request_id):
+def temploctable(request_id,address_in, city_in, state_in, zip_in, store_in):
 	try:
 		table_loc = "in_memory"
 		table_name = request_id + "_temp_table"
@@ -342,32 +344,50 @@ def temploctable(request_id):
 		arcpy.AddField_management(temp_table, "FAILURECODE", "TEXT", field_length=20)
 		arcpy.AddField_management(temp_table, "RADIUS", "FLOAT", field_length=20)
 		arcpy.AddField_management(temp_table, "REQUESTID", "FLOAT", field_length=20)
-		arcpy.CalculateField_management(temp_table,"FAILURECODE","fc","VB","#")
-		return temp_loc_table;
+		cursor = arcpy.da.InsertCursor(temp_table, ["Address", "city", "state", "zip", "store"])
+		cursor.insertRow([address_in, city_in, state_in, zip_in, store_in])
 	except:
 		arcpy.AddMessage('temp table failure')
-
 		
 # geocode single location		
-def geocode(loc_name,temp_loc_table):
+def geocode(request_id,loc_out):
 	try:
+		table_name = 'in_memory\\' + request_id + "_temp_table"
 		address_locator = r'C:\ArcGIS\Business Analyst\US_2015\Data\Geocoding Data\USA_LocalComposite.loc'
 		address_fields = "Address Address;City City;State State;ZIP Zip"
-		geocode_result = loc_name
-		arcpy.GeocodeAddresses_geocoding(temp_loc_table, address_locator, address_fields, geocode_result, 'STATIC')
-		return loc_name;
+		geocode_result = loc_out
+		arcpy.GeocodeAddresses_geocoding(table_name, address_locator, address_fields, geocode_result, 'STATIC')
+		arcpy.Delete_management(table_name)
+		return loc_out;
 	except:
-		arcpy.AddMessage('geocodeing failed')
+		arcpy.AddMessage('Geocoding Failed')
 
-# add geocoded loaction to TOC
+		
+		
+# *************MULTI LOCATION GEOCODE FUNCTIONS******************************
+#create location table
+def multiloctemp(loc_in,loc_table):
+	table_space = 'in_memory'
+	arcpy.TableToTable_conversion(loc_in,table_space,loc_table)
+	return loc_table;
+
+#Geocode location
+def geocodemulti(loc_table,loc_out):
+	address_table = 'in_memory\\' + loc_table
+	address_locator = r'C:\ArcGIS\Business Analyst\US_2015\Data\Geocoding Data\USA_LocalComposite.loc'
+	address_fields = 'address address;city city;state state;zip zip'
+	geocode_result = loc_out
+	arcpy.GeocodeAddresses_geocoding(address_table, address_locator, address_fields, geocode_result, 'STATIC')
+	return geocode_result;
+		
+# Add location layer to TOC
 def loadlayer(loc_out):
 	try:
 		layer = arcpy.mapping.Layer(loc_out)
 		arcpy.mapping.AddLayer(df,layer)
-		arcpy.RefreshTOC()
-		arcpy.RefreshActiveView()
 	except:
-		arcpy.AddMessage('layer failed to load')
+		arcpy.AddMessage('Layer Failed to Load')
+
 
 # clean location table		
 def cleanloctable(loc_out):
@@ -376,9 +396,8 @@ def cleanloctable(loc_out):
 		for layer in layers:
 			if layer.name == loc_out:	
 				temp_loc = loc_out
-
-		arcpy.CalculateField_management(temp_loc,"LATITUDE",'[Y]',"VB","#")
-		arcpy.CalculateField_management(temp_loc,"LONGITUDE",'[X]',"VB","#")
-		arcpy.CalculateField_management(temp_loc,"FAILURECODE","[Loc_name]","VB","#")
+				arcpy.CalculateField_management(temp_loc,"LATITUDE",'[Y]',"VB","#")
+				arcpy.CalculateField_management(temp_loc,"LONGITUDE",'[X]',"VB","#")
+				arcpy.CalculateField_management(temp_loc,"FAILURECODE","[Loc_name]","VB","#")
 	except:
 		arcpy.AddMessage('Could not clean loc table')
