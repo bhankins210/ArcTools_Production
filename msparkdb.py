@@ -64,16 +64,28 @@ def importview(view_name):
 def stateconvert(state_in):
 	try:
 		state_string = state_in.upper()
-		state_tuple = tuple(state_string.split(','))
+		state_tuple = tuple(state_string.split(';'))
 		state_parameter = ''
 		for state in state_tuple:
-			state_parameter = state_parameter + "''" + state + "'',"
+			state_parameter = state_parameter + "''" + state[1:3] + "'',"
 		state_parameter = state_parameter[:-1]
 		state_parameter = '(' + state_parameter + ')'
 		return state_parameter
 	except:
 		print 'could not convert states'
-
+# convert state input into sql parameter
+# def stateconvert(state_in):
+	# try:
+		# state_string = state_in.upper()
+		# state_tuple = tuple(state_string.split(','))
+		# state_parameter = ''
+		# for state in state_tuple:
+			# state_parameter = state_parameter + "''" + state + "'',"
+		# state_parameter = state_parameter[:-1]
+		# state_parameter = '(' + state_parameter + ')'
+		# return state_parameter
+	# except:
+		# print 'could not convert states'
 		
 # runs spatial view stored procedure
 def spatialview(*in_var):
@@ -88,6 +100,41 @@ def spatialview(*in_var):
 		con.close()
 	except:
 		print 'could not create view'
+
+		
+# add variables and composite index to view
+def compositeindex(table_name, index_string):
+	try:
+		con = dbconn()
+		cur = con.cursor()
+		index_string = index_string.upper()
+		index_tuple = tuple(index_string.split(','))
+		index_string_repl = index_string.replace(',','+')
+		tup_len = len(index_tuple)
+		# add column to table for each variable
+		for index in index_tuple:
+			sql_command = 'ALTER TABLE ' + table_name + ' ADD ' + index + ' float'  
+			cur.execute(sql_command)
+			sql_command4 = """EXEC [gis].[AddCompositeIndex]'%s','%s'""" %(table_name,index)
+			cur.execute(sql_command4)
+			con.commit()
+		# add composite_index to table
+		sql_command2 = 'ALTER TABLE ' + table_name + ' ADD composite_index float'  
+		cur.execute(sql_command2)
+		con.commit()
+		
+		# conver string of variables to tuple
+		sql_command5 = 'UPDATE ' + table_name + ' SET composite_index = (' + index_string_repl + ')/' + str(tup_len)
+		cur.execute(sql_command5)
+		con.commit()
+
+		# refresh view on sql db and close connection
+		sql_command3 = "EXECUTE sp_refreshview N'sde.svw" + table_name[3:] + "'"
+		cur.execute(sql_command3)
+		con.commit()
+		con.close()
+	except:
+		arcpy.AddMessage('Failed to add Composite Index')		
 
 
 # delete spatial view
