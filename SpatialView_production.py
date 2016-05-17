@@ -25,8 +25,13 @@ end_date = str(end_date_in)
 state_string = arcpy.GetParameterAsText(7)
 all_state = arcpy.GetParameterAsText(8)
 
+# add variables and composite index to view
+add_index = arcpy.GetParameterAsText(9)
+index_string = arcpy.GetParameterAsText(10)
+
+
 # auto add created layers to TOC.  Default False
-auto_add = arcpy.GetParameterAsText(9)
+# auto_add = arcpy.GetParameterAsText(9)
 
 # convert state_string to comma separated string list
 if str(all_state) == 'true':
@@ -47,14 +52,15 @@ if str(split) == 'true':
 	split_view = 'svws_' + table_name
 	split_layer = 'svws_' + table_name
 	msparkdb.spatialview(split_table, start_date, end_date, split_view, state_parameter)	
-
+		
 # Create route spatial view
 if str(route) == 'true':	
 	route_table = 'tblr_' + table_name
 	route_view = 'svwr_' + table_name
 	route_layer = 'svwr_' + table_name
 	msparkdb.spatialview(route_table, start_date, end_date, route_view, state_parameter)	
-		
+
+
 # clean views
 if str(clean_view) == 'true':
 	if str(zip) == 'true':	
@@ -64,21 +70,39 @@ if str(clean_view) == 'true':
 	if str(route) == 'true':
 		msparkdb.cleanview(route_table)
 
+		
+		
 # add view layers to TOC	
 # db_connection = r'C:\Users\bhankins\AppData\Roaming\ESRI\Desktop10.3\ArcCatalog\arc_spatial_view.sde'
-db_connection = r'Database Connections\arc_spatial_view.sde'	
+db_connection = r'Database Connections\spatial_view_bhankins.sde'	
 arcpy.RefreshCatalog(db_connection)	
 # arcpy.RefreshCatalog(r'Database Connections\arc_spatial_view.sde')
 
-if str(auto_add) == 'true':
-# if add_layers == 'yes':
+# add indexes
+if str(add_index) == 'true':
 	if str(zip) == 'true':
-		msparkdb.importview(zip_view)
-	if str(split) == 'true':
-		msparkdb.importview(split_view)
+		msparkdb.compositeindex(zip_table,index_string)
+	if str(split) == 'true':	
+		msparkdb.compositeindex(split_table,index_string)
 	if str(route) == 'true':
-		msparkdb.importview(route_view)
+		msparkdb.compositeindex(route_table,index_string)
+		
+
+# # add view layers to TOC	
+# # db_connection = r'C:\Users\bhankins\AppData\Roaming\ESRI\Desktop10.3\ArcCatalog\arc_spatial_view.sde'
+# db_connection = r'Database Connections\spatial_view_bhankins.sde'	
+# arcpy.RefreshCatalog(db_connection)	
+# # arcpy.RefreshCatalog(r'Database Connections\arc_spatial_view.sde')
+
+# if str(auto_add) == 'true':
+# # if add_layers == 'yes':
+	# if str(zip) == 'true':
+		# msparkdb.importview(zip_view)
+	# if str(split) == 'true':
+		# msparkdb.importview(split_view)
+	# if str(route) == 'true':
+		# msparkdb.importview(route_view)
 	
-	arcpy.RefreshTOC()
-	arcpy.RefreshActiveView()
+	# arcpy.RefreshTOC()
+	# arcpy.RefreshActiveView()
 	
