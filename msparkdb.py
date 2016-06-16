@@ -14,23 +14,33 @@ db_connection = 'Database Connections\spatial_view.sde'
 # sr = r"C:\Program Files (x86)\ArcGIS\Desktop10.3\Reference Systems\WGS 1984 Web Mercator (auxiliary sphere).prj"
 sr = r'C:\Program Files (x86)\ArcGIS\Desktop10.0\Coordinate Systems\Geographic Coordinate Systems\World\WGS 1984.prj'
 
+
+
 # # Creates databse connection via pypyodbc
 def dbconn():
 	try:
-		connection = pypyodbc.connect('DRIVER={SQL Server Native Client 11.0};SERVER=mapping-sqldev\ARC;DATABASE=spatial_view;UID=sde;PWD=SDE123**')
+		connection = pypyodbc.connect('DRIVER={SQL Server Native Client 10.0};SERVER=CO-ArcGISSQL;DATABASE=spatial_view;UID=sde;PWD=@rcSD3@dmin')
 		return connection
 	except:
 		print 'Cannot connect to database'
 		arcpy.AddMessage('Cannot Connect to DB')
-
 # # Creates databse connection via pypyodbc
-def dbconn2():
-	try:
-		connection = pypyodbc.connect('DRIVER={SQL Server Native Client 11.0};SERVER=mapping-sqldev\esri;DATABASE=spatial_view;UID=id;PWD=pass;Trusted_Connection=Yes')
-		# connection.autocommit = True
-		return connection
-	except:
-		print 'Cannot connect to database'
+# def dbconn():
+	# try:
+		# connection = pypyodbc.connect('DRIVER={SQL Server Native Client 11.0};SERVER=mapping-sqldev\ARC;DATABASE=spatial_view;UID=sde;PWD=SDE123**')
+		# return connection
+	# except:
+		# print 'Cannot connect to database'
+		# arcpy.AddMessage('Cannot Connect to DB')
+
+# # # Creates databse connection via pypyodbc
+# def dbconn2():
+	# try:
+		# connection = pypyodbc.connect('DRIVER={SQL Server Native Client 11.0};SERVER=mapping-sqldev\esri;DATABASE=spatial_view;UID=id;PWD=pass;Trusted_Connection=Yes')
+		# # connection.autocommit = True
+		# return connection
+	# except:
+		# print 'Cannot connect to database'
 
 # ***********************************spatial view functions*************************************		
 # Runs clean view stored procedure
