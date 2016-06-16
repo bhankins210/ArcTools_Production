@@ -71,10 +71,9 @@ if str(clean_view) == 'true':
 		msparkdb.cleanview(route_table)
 
 		
-		
 # add view layers to TOC	
 # db_connection = r'C:\Users\bhankins\AppData\Roaming\ESRI\Desktop10.3\ArcCatalog\arc_spatial_view.sde'
-db_connection = r'Database Connections\spatial_view_bhankins.sde'	
+db_connection = r'Database Connections\spatial_view.sde'	
 arcpy.RefreshCatalog(db_connection)	
 # arcpy.RefreshCatalog(r'Database Connections\arc_spatial_view.sde')
 

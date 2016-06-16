@@ -8,7 +8,7 @@ view_name_in = arcpy.GetParameterAsText(0)
 msparkdb.deleteview(view_name_in)
 
 # refresh catalog view
-db_connection = r'Database Connections\spatial_view_bhankins.sde'	
+db_connection = r'Database Connections\spatial_view.sde'	
 arcpy.RefreshCatalog(db_connection)	
 
 
