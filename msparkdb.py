@@ -1,10 +1,14 @@
 """
-Spatial View Function Module
+Mspark tools Function Module
+
+DATE		INT		CHANGE
+2016-07-29	bmh		Changed profileloc function to override max_radius if a radius is included on the location import file.
 
 """
 
 import arcpy
 import pypyodbc
+import string
 
 
 # define working mxd file, data frame, and sde connection
@@ -313,7 +317,13 @@ def profileloc(loc_table_in,view_name_in,max_radius):
 			store = row.store
 			lat = row.latitude
 			lon = row.longitude
-			sql_command = """EXEC [gis].[SearchRadius_brian] '%s','%s','%s','%s','%s','%s'""" %(table_name, str(lat), str(lon), str(max_radius), str(store), dupes)
+			store_radius = row.radius
+			# remove unprintable ascii characters from store string
+			clean_store = filter(lambda x:x in string.printable, store)
+			if store_radius is not None:
+				max_radius = row.radius
+			sql_command = """EXEC [gis].[SearchRadius_brian] '%s','%s','%s','%s','%s','%s'""" %(table_name, str(lat), str(lon), str(max_radius), str(clean_store), dupes)
+			# arcpy.AddMessage(sql_command)
 			cur.execute(sql_command)
 			con.commit()
 			row = rows.next()
@@ -339,14 +349,15 @@ def duplprofileloc(loc_table_in,view_name_in,max_radius):
 			store = row.store
 			lat = row.latitude
 			lon = row.longitude
-			sql_command2 = """EXEC [gis].[RadiusDupes_brian] '%s','%s','%s','%s','%s','%s'""" %(table_name, str(lat), str(lon), str(max_radius), str(store), dupes)
-			arcpy.AddMessage(sql_command2)
+			store_radius = row.radius
+			# remove unprintable ascii characters from store string
+			clean_store = filter(lambda x:x in string.printable, store)
+			if store_radius is not None:
+				max_radius = row.radius
+			sql_command2 = """EXEC [gis].[RadiusDupes_brian] '%s','%s','%s','%s','%s','%s'""" %(table_name, str(lat), str(lon), str(max_radius), str(clean_store), dupes)
 			cur.execute(sql_command2)
-			arcpy.AddMessage('executed')
 			con.commit()
-			arcpy.AddMessage('commited')
 			row = rows.next()
-			# arcpy.AddMessage(row)
 		con.close()
 		del con
 		arcpy.AddMessage('Duplicated Profile Complete')
@@ -369,10 +380,25 @@ def newmdb(new_mdb_loc,new_mdb_name):
 		arcpy.AddMessage('fail')
 		
 # create location layer from pre-geocoded address list
-def loctable(loc_in,space,loc_table,xy_event,loc_out):
+# updated to use same logic as single location.  This will force numerical store values into a string value
+def loctable(request_id,loc_in,space,loc_table,xy_event,loc_out):
 	try:
-		arcpy.TableToTable_conversion(loc_in,space,loc_table)
-		arcpy.MakeXYEventLayer_management(loc_in,"LONGITUDE","LATITUDE",xy_event,sr)
+		table_loc = "in_memory"
+		table_name = request_id + "_temp_table"
+		temp_table = arcpy.CreateTable_management(table_loc, table_name)
+		arcpy.AddField_management(temp_table, "Address", "TEXT", field_length=1100)
+		arcpy.AddField_management(temp_table, "city", "TEXT", field_length=30)
+		arcpy.AddField_management(temp_table, "state", "TEXT", field_length=2)
+		arcpy.AddField_management(temp_table, "zip", "TEXT", field_length=5)
+		arcpy.AddField_management(temp_table, "store", "TEXT", field_length=30)
+		arcpy.AddField_management(temp_table, "LATITUDE", "FLOAT", field_length=20)
+		arcpy.AddField_management(temp_table, "LONGITUDE", "FLOAT", field_length=20)
+		arcpy.AddField_management(temp_table, "FAILURECODE", "TEXT", field_length=20)
+		arcpy.AddField_management(temp_table, "RADIUS", "FLOAT", field_length=20)
+		arcpy.AddField_management(temp_table, "REQUESTID", "FLOAT", field_length=20)
+		arcpy.Append_management(loc_in, temp_table,"NO_TEST")
+		arcpy.TableToTable_conversion(temp_table,space,loc_table)
+		arcpy.MakeXYEventLayer_management(temp_table,"LONGITUDE","LATITUDE",xy_event,sr)
 		arcpy.CopyFeatures_management(xy_event,loc_out)
 		arcpy.Delete_management(xy_event)
 		arcpy.Delete_management(loc_table)
@@ -423,9 +449,28 @@ def geocode(request_id,loc_out):
 		
 # *************MULTI LOCATION GEOCODE FUNCTIONS******************************
 #create location table
-def multiloctemp(loc_in,loc_table):
+# def multiloctemp(loc_in,loc_table):
+	# table_space = 'in_memory'
+	# arcpy.TableToTable_conversion(loc_in,table_space,loc_table)
+	# return loc_table;
+# updated to use same logic as single location.  This will force numerical store values into a string value
+def multiloctemp(request_id,loc_in, loc_table):
 	table_space = 'in_memory'
-	arcpy.TableToTable_conversion(loc_in,table_space,loc_table)
+	table_loc = "in_memory"
+	table_name = request_id + "_temp_table"
+	temp_table = arcpy.CreateTable_management(table_loc, table_name)
+	arcpy.AddField_management(temp_table, "Address", "TEXT", field_length=1100)
+	arcpy.AddField_management(temp_table, "city", "TEXT", field_length=30)
+	arcpy.AddField_management(temp_table, "state", "TEXT", field_length=2)
+	arcpy.AddField_management(temp_table, "zip", "TEXT", field_length=5)
+	arcpy.AddField_management(temp_table, "store", "TEXT", field_length=30)
+	arcpy.AddField_management(temp_table, "LATITUDE", "FLOAT", field_length=20)
+	arcpy.AddField_management(temp_table, "LONGITUDE", "FLOAT", field_length=20)
+	arcpy.AddField_management(temp_table, "FAILURECODE", "TEXT", field_length=20)
+	arcpy.AddField_management(temp_table, "RADIUS", "FLOAT", field_length=20)
+	arcpy.AddField_management(temp_table, "REQUESTID", "FLOAT", field_length=20)
+	arcpy.Append_management(loc_in, temp_table,"NO_TEST")
+	arcpy.TableToTable_conversion(temp_table,table_space,loc_table)
 	return loc_table;
 
 #Geocode location

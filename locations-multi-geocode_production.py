@@ -25,7 +25,7 @@ else:
 arcpy.env.workspace = space
 
 #create location table
-msparkdb.multiloctemp(loc_in,loc_table)
+msparkdb.multiloctemp(request_id,loc_in,loc_table)
 
 #Geocode location
 msparkdb.geocodemulti(loc_table,loc_out)
@@ -39,4 +39,6 @@ msparkdb.cleanloctable(loc_out)
 # refresh views
 arcpy.RefreshTOC()
 arcpy.RefreshActiveView()
+
+
 
