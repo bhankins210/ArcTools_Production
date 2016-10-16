@@ -197,6 +197,7 @@ def syncmapupdate(view_name_in):
 		con = dbconn()
 		cur = con.cursor()
 		sql_command = """EXEC [gis].[sync_map_update] '%s'""" % view_name
+		# arcpy.AddMessage('Reset to 0 ' + sql_command)
 		cur.execute(sql_command)
 		con.commit()
 		con.close()
@@ -213,6 +214,7 @@ def syncmapset(view_name_in,geo_in):
 		con = dbconn()
 		cur = con.cursor()
 		sql_command = """EXEC [gis].[sync_map_set] '%s','%s'""" % (view_name, geo)
+		# arcpy.AddMessage('set selected = 1 ' + sql_command)
 		cur.execute(sql_command)
 		con.commit()
 		con.close()
@@ -228,6 +230,7 @@ def syncmapdelete(view_name_in):
 		con = dbconn()
 		cur = con.cursor()
 		sql_command = """EXEC [gis].[sync_map_delete] '%s'""" % view_name
+		# arcpy.AddMessage('delete rows with 0 ' + sql_command)
 		cur.execute(sql_command)
 		con.commit()
 		con.close()
@@ -240,7 +243,9 @@ def syncmaprun(view_name_in):
 	try:
 		# determine level of geography
 		view_space = view_name_in.find('svw')
+		# arcpy.AddMessage(view_space)
 		view_name = view_name_in[view_space:]
+		# arcpy.AddMessage(view_name)
 		if view_name[0:4].upper() == 'SVWZ':
 			featureclass = view_name_in
 			rows = arcpy.SearchCursor(featureclass)
@@ -263,11 +268,12 @@ def syncmaprun(view_name_in):
 			row = rows.next()
 			while row:
 				CR_ID = row.CR_ID
+				# arcpy.AddMessage(CR_ID)
 				syncmapset(view_name_in,CR_ID)
 				row = rows.next()
 	except:
 		print 'error'
-
+		arcpy.AddMessage('SyncMapRun Failed')
 		
 # clear selected features and refresh map view		
 def clearlayer(view_clear):
@@ -390,12 +396,12 @@ def loctable(request_id,loc_in,space,loc_table,xy_event,loc_out):
 		arcpy.AddField_management(temp_table, "city", "TEXT", field_length=30)
 		arcpy.AddField_management(temp_table, "state", "TEXT", field_length=2)
 		arcpy.AddField_management(temp_table, "zip", "TEXT", field_length=5)
-		arcpy.AddField_management(temp_table, "store", "TEXT", field_length=30)
+		arcpy.AddField_management(temp_table, "store", "TEXT", field_length=50)
 		arcpy.AddField_management(temp_table, "LATITUDE", "FLOAT", field_length=20)
 		arcpy.AddField_management(temp_table, "LONGITUDE", "FLOAT", field_length=20)
 		arcpy.AddField_management(temp_table, "FAILURECODE", "TEXT", field_length=20)
 		arcpy.AddField_management(temp_table, "RADIUS", "FLOAT", field_length=20)
-		arcpy.AddField_management(temp_table, "REQUESTID", "FLOAT", field_length=20)
+		arcpy.AddField_management(temp_table, "REQUESTID", "TEXT", field_length=20)
 		arcpy.Append_management(loc_in, temp_table,"NO_TEST")
 		arcpy.TableToTable_conversion(temp_table,space,loc_table)
 		arcpy.MakeXYEventLayer_management(temp_table,"LONGITUDE","LATITUDE",xy_event,sr)
@@ -421,12 +427,12 @@ def temploctable(request_id,address_in, city_in, state_in, zip_in, store_in):
 		arcpy.AddField_management(temp_table, "city", "TEXT", field_length=30)
 		arcpy.AddField_management(temp_table, "state", "TEXT", field_length=2)
 		arcpy.AddField_management(temp_table, "zip", "TEXT", field_length=5)
-		arcpy.AddField_management(temp_table, "store", "TEXT", field_length=30)
+		arcpy.AddField_management(temp_table, "store", "TEXT", field_length=50)
 		arcpy.AddField_management(temp_table, "LATITUDE", "FLOAT", field_length=20)
 		arcpy.AddField_management(temp_table, "LONGITUDE", "FLOAT", field_length=20)
 		arcpy.AddField_management(temp_table, "FAILURECODE", "TEXT", field_length=20)
 		arcpy.AddField_management(temp_table, "RADIUS", "FLOAT", field_length=20)
-		arcpy.AddField_management(temp_table, "REQUESTID", "FLOAT", field_length=20)
+		arcpy.AddField_management(temp_table, "REQUESTID", "TEXT", field_length=20)
 		cursor = arcpy.da.InsertCursor(temp_table, ["Address", "city", "state", "zip", "store"])
 		cursor.insertRow([address_in, city_in, state_in, zip_in, store_in])
 	except:
@@ -463,12 +469,12 @@ def multiloctemp(request_id,loc_in, loc_table):
 	arcpy.AddField_management(temp_table, "city", "TEXT", field_length=30)
 	arcpy.AddField_management(temp_table, "state", "TEXT", field_length=2)
 	arcpy.AddField_management(temp_table, "zip", "TEXT", field_length=5)
-	arcpy.AddField_management(temp_table, "store", "TEXT", field_length=30)
+	arcpy.AddField_management(temp_table, "store", "TEXT", field_length=50)
 	arcpy.AddField_management(temp_table, "LATITUDE", "FLOAT", field_length=20)
 	arcpy.AddField_management(temp_table, "LONGITUDE", "FLOAT", field_length=20)
 	arcpy.AddField_management(temp_table, "FAILURECODE", "TEXT", field_length=20)
 	arcpy.AddField_management(temp_table, "RADIUS", "FLOAT", field_length=20)
-	arcpy.AddField_management(temp_table, "REQUESTID", "FLOAT", field_length=20)
+	arcpy.AddField_management(temp_table, "REQUESTID", "TEXT", field_length=20)
 	arcpy.Append_management(loc_in, temp_table,"NO_TEST")
 	arcpy.TableToTable_conversion(temp_table,table_space,loc_table)
 	return loc_table;
